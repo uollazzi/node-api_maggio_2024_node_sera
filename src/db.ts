@@ -1,17 +1,8 @@
-import { config } from "dotenv";
-import mongoose from "mongoose";
-config();
+import mongoose, { HydratedDocument, InferSchemaType } from "mongoose";
+import { PostAddDTO } from "./models/blog";
 
 //#region Models
-interface IPost {
-    title: string,
-    author: string,
-    body: string,
-    date: Date,
-    hidden: boolean,
-}
-
-const postSchema = new mongoose.Schema<IPost>({
+const postSchema = new mongoose.Schema({
     title: { type: String, required: true },
     author: { type: String, required: true },
     body: { type: String, required: true },
@@ -19,29 +10,27 @@ const postSchema = new mongoose.Schema<IPost>({
     hidden: { type: Boolean, default: true },
 });
 
-const Post = mongoose.model<IPost>("Post", postSchema, "posts");
+export type IPost = HydratedDocument<InferSchemaType<typeof postSchema>>;
+const PostModel = mongoose.model("Post", postSchema, "posts");
 //#endregion
 
 const connectionString = process.env.MONGODB_CONNECTION_STRING;
 
-export const addPost = async (
-    title: string,
-    author: string,
-    body: string,
-    hidden: boolean) => {
+export const addPost = async (post: PostAddDTO) => {
 
     try {
         await mongoose.connect(connectionString!, { dbName: "blog" });
 
-        const post = new Post();
-        post.title = title;
-        post.body = body;
-        post.author = author;
-        post.hidden = hidden;
+        const nuovoPost = new PostModel();
+        nuovoPost.title = post.title;
+        nuovoPost.body = post.body;
+        nuovoPost.author = post.author;
+        nuovoPost.hidden = post.hidden;
 
-        return await post.save();
+        return await nuovoPost.save();
     } catch (error) {
         console.log(error);
+        throw error;
     }
     finally {
         await mongoose.disconnect();
@@ -53,9 +42,10 @@ export const getPosts = async () => {
     try {
         await mongoose.connect(connectionString!, { dbName: "blog" });
 
-        return await Post.find();
+        return await PostModel.find();
     } catch (error) {
         console.log(error);
+        throw error;
     }
     finally {
         await mongoose.disconnect();
@@ -67,7 +57,7 @@ export const deletePost = async (id: string) => {
     try {
         await mongoose.connect(connectionString!, { dbName: "blog" });
 
-        return await Post.findByIdAndDelete(id);
+        return await PostModel.findByIdAndDelete(id);
     } catch (error) {
         console.log(error);
     }
@@ -87,7 +77,7 @@ export const updatePost = async (
     try {
         await mongoose.connect(connectionString!, { dbName: "blog" });
 
-        const post = await Post.findById(id);
+        const post = await PostModel.findById(id);
 
         if (!post) {
             throw new Error("Post non trovato.");
