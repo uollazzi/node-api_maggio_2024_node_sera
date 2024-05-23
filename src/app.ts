@@ -13,6 +13,7 @@ const port = Number(process.env.PORT) || 3000;
 // middlewares
 app.use(cors());
 app.use(morgan("dev"));
+app.use(express.static("public"));
 
 // middleware che converte in json il body di tutte le richieste che hanno
 // Content-Type: application/json
